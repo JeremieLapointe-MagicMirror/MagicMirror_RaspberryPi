@@ -12,24 +12,11 @@ MQTT_BROKER = "mirrormqtt.jeremielapointe.ca"
 MQTT_PORT = 1883
 MQTT_USER = "MirrorMQTT"
 MQTT_PASSWORD = "Patate123"
-MQTT_TOPIC = "test/topic"
-MQTT_STATUS_TOPIC = "led/status"  # Nouveau topic pour le status
+MQTT_STATUS_TOPIC = "led/status"
 
 # Callbacks MQTT
 def on_connect(client, userdata, flags, rc):
     print(f"Connecté au broker avec le code: {rc}")
-    client.subscribe(MQTT_TOPIC)
-    print(f"Abonné au topic: {MQTT_TOPIC}")
-
-def on_message(client, userdata, msg):
-    message = msg.payload.decode()
-    print(f"Message reçu: {message}")
-    
-    # Contrôle de la LED basé sur le message
-    if message.lower() == "on":
-        set_led_state(client, True)
-    elif message.lower() == "off":
-        set_led_state(client, False)
 
 def set_led_state(client, state):
     GPIO.output(LED_PIN, state)
@@ -45,7 +32,6 @@ def main():
         
         # Attribution des callbacks
         client.on_connect = on_connect
-        client.on_message = on_message
         
         # Connexion au broker
         print(f"Connexion au broker {MQTT_BROKER}")
@@ -54,12 +40,17 @@ def main():
         # Démarrage de la boucle MQTT
         client.loop_start()
         
-        # Envoi du status initial
-        set_led_state(client, False)
+        # État initial de la LED
+        led_state = False
         
         # Boucle principale
         while True:
-            time.sleep(1)  # Réduit l'utilisation CPU
+            # Change l'état de la LED
+            led_state = not led_state
+            set_led_state(client, led_state)
+            
+            # Attend 5 secondes
+            time.sleep(5)
             
     except KeyboardInterrupt:
         print("\nArrêt du programme")
