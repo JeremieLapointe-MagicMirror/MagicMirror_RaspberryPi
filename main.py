@@ -13,6 +13,7 @@ MQTT_PORT = 1883
 MQTT_USER = "MirrorMQTT"
 MQTT_PASSWORD = "Patate123"
 MQTT_TOPIC = "test/topic"
+MQTT_STATUS_TOPIC = "led/status"  # Nouveau topic pour le status
 
 # Callbacks MQTT
 def on_connect(client, userdata, flags, rc):
@@ -26,11 +27,15 @@ def on_message(client, userdata, msg):
     
     # Contrôle de la LED basé sur le message
     if message.lower() == "on":
-        GPIO.output(LED_PIN, GPIO.HIGH)
-        print("LED allumée")
+        set_led_state(client, True)
     elif message.lower() == "off":
-        GPIO.output(LED_PIN, GPIO.LOW)
-        print("LED éteinte")
+        set_led_state(client, False)
+
+def set_led_state(client, state):
+    GPIO.output(LED_PIN, state)
+    status_message = "ON" if state else "OFF"
+    client.publish(MQTT_STATUS_TOPIC, status_message)
+    print(f"LED {status_message}")
 
 def main():
     try:
@@ -49,11 +54,12 @@ def main():
         # Démarrage de la boucle MQTT
         client.loop_start()
         
+        # Envoi du status initial
+        set_led_state(client, False)
+        
         # Boucle principale
         while True:
-            # Publie un message périodique
-            client.publish(MQTT_TOPIC, "Hello depuis le Raspberry Pi!")
-            time.sleep(5)
+            time.sleep(1)  # Réduit l'utilisation CPU
             
     except KeyboardInterrupt:
         print("\nArrêt du programme")
