@@ -1,5 +1,5 @@
-import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
+import RPi.GPIO as GPIO #Fonctionne seulement sur le raspberry pi
+import paho.mqtt.client as mqtt #Fonctionne seulement sur le raspberry pi
 import time
 
 # Configuration GPIO
