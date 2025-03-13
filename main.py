@@ -1,32 +1,26 @@
 #!/usr/bin/env python3
-from rpi_ws281x import PixelStrip, Color
+import board
+import neopixel
 import paho.mqtt.client as mqtt
 import time
 import json
 
 # Configuration des LEDs WS2812B
-LED_COUNT = 5        # Nombre de LEDs
-LED_PIN = 18         # GPIO pin (18 utilise PWM)
-LED_FREQ_HZ = 800000 # Fréquence du signal (800 KHz)
-LED_DMA = 10         # Canal DMA
-LED_BRIGHTNESS = 50  # Luminosité (0-255)
-LED_INVERT = False   # Signal inversé
-LED_CHANNEL = 0      # Canal PWM (0 ou 1)
+LED_PIN = board.D18  # GPIO 18
+NUM_PIXELS = 5       # Nombre de LEDs sur votre bande
+ORDER = neopixel.GRB # L'ordre des couleurs peut être GRB ou RGB
 
 # Initialisation de la bande LED
-strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
-strip.begin()
-
-# Fonctions utilitaires pour les couleurs
-def color(r, g, b):
-    return Color(r, g, b)
+pixels = neopixel.NeoPixel(
+    LED_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
+)
 
 # Couleurs prédéfinies
-RED = color(255, 0, 0)
-GREEN = color(0, 255, 0)
-BLUE = color(0, 0, 255)
-WHITE = color(255, 255, 255)
-OFF = color(0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+WHITE = (255, 255, 255)
+OFF = (0, 0, 0)
 
 # Configuration MQTT
 MQTT_BROKER = "mirrormqtt.jeremielapointe.ca"
@@ -34,7 +28,7 @@ MQTT_PORT = 1883
 MQTT_USER = "MirrorMQTT"
 MQTT_PASSWORD = "Patate123"
 MQTT_STATUS_TOPIC = "led/status"
-MQTT_COMMAND_TOPIC = "led/command"
+MQTT_COMMAND_TOPIC = "led/command"  # Pour recevoir des commandes
 
 # Callbacks MQTT
 def on_connect(client, userdata, flags, rc):
@@ -51,22 +45,21 @@ def on_message(client, userdata, msg):
             command = json.loads(msg.payload.decode())
             
             if "color" in command:
-                color_name = command["color"]
-                if color_name == "red":
+                color = command["color"]
+                if color == "red":
                     set_led_color(client, RED)
-                elif color_name == "green":
+                elif color == "green":
                     set_led_color(client, GREEN)
-                elif color_name == "blue":
+                elif color == "blue":
                     set_led_color(client, BLUE)
-                elif color_name == "white":
+                elif color == "white":
                     set_led_color(client, WHITE)
-                elif color_name == "off":
+                elif color == "off":
                     set_led_color(client, OFF)
-                elif isinstance(color_name, dict) and "rgb" in color_name:
+                elif "rgb" in color:
                     # Format attendu: {"color": {"rgb": [255, 0, 0]}}
-                    rgb = color_name["rgb"]
-                    c = color(rgb[0], rgb[1], rgb[2])
-                    set_led_color(client, c)
+                    rgb_values = tuple(color["rgb"])
+                    set_led_color(client, rgb_values)
             
             elif "state" in command:
                 if command["state"] == "ON":
@@ -75,65 +68,55 @@ def on_message(client, userdata, msg):
                     set_led_color(client, OFF)
                     
             elif "brightness" in command:
-                # Valeur entre 0 et 255
-                brightness = int(float(command["brightness"]) * 255)
-                strip.setBrightness(brightness)
-                strip.show()
-                client.publish(MQTT_STATUS_TOPIC, json.dumps({"brightness": brightness/255}))
+                # Valeur entre 0.0 et 1.0
+                brightness = float(command["brightness"])
+                pixels.brightness = min(max(brightness, 0.0), 1.0)
+                pixels.show()
+                client.publish(MQTT_STATUS_TOPIC, json.dumps({"brightness": brightness}))
                 
         except json.JSONDecodeError:
             print("Erreur: Le message n'est pas au format JSON valide")
         except Exception as e:
             print(f"Erreur lors du traitement du message: {str(e)}")
 
-def set_led_color(client, color_value):
-    for i in range(strip.numPixels()):
-        strip.setPixelColor(i, color_value)
-    strip.show()
+def set_led_color(client, color):
+    pixels.fill(color)
+    pixels.show()
     
     # Détermine l'état pour le message de statut
-    if color_value == OFF:
+    if color == OFF:
         status = "OFF"
     else:
         status = "ON"
     
-    # Extrait les composantes RGB
-    r = (color_value >> 16) & 0xFF
-    g = (color_value >> 8) & 0xFF
-    b = color_value & 0xFF
-    
     # Publie le statut et la couleur
     status_message = json.dumps({
         "state": status,
-        "color": {"r": r, "g": g, "b": b}
+        "color": {"r": color[0], "g": color[1], "b": color[2]}
     })
     
     client.publish(MQTT_STATUS_TOPIC, status_message)
-    print(f"LED {status} - Couleur: RGB({r}, {g}, {b})")
+    print(f"LED {status} - Couleur: RGB{color}")
 
 def test_leds():
     """Fonction pour tester toutes les LEDs au démarrage"""
     print("Test des LEDs...")
     
     # Test des couleurs de base
-    for test_color in [RED, GREEN, BLUE, WHITE]:
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(i, test_color)
-        strip.show()
+    for color in [RED, GREEN, BLUE, WHITE]:
+        pixels.fill(color)
+        pixels.show()
         time.sleep(0.5)
     
     # Test individuel de chaque LED
-    for i in range(strip.numPixels()):
-        for j in range(strip.numPixels()):
-            strip.setPixelColor(j, OFF)
-        strip.setPixelColor(i, WHITE)
-        strip.show()
+    pixels.fill(OFF)
+    pixels.show()
+    for i in range(NUM_PIXELS):
+        pixels[i] = WHITE
+        pixels.show()
         time.sleep(0.2)
-    
-    # Éteindre toutes les LEDs
-    for i in range(strip.numPixels()):
-        strip.setPixelColor(i, OFF)
-    strip.show()
+        pixels[i] = OFF
+        pixels.show()
     
     print("Test terminé")
 
@@ -167,20 +150,16 @@ def main():
     except KeyboardInterrupt:
         print("\nArrêt du programme")
         # Éteindre les LEDs avant de quitter
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(i, OFF)
-        strip.show()
+        pixels.fill(OFF)
+        pixels.show()
         client.loop_stop()
         
     except Exception as e:
         print(f"Erreur: {str(e)}")
-        # Tenter d'éteindre les LEDs en cas d'erreur
-        try:
-            for i in range(strip.numPixels()):
-                strip.setPixelColor(i, OFF)
-            strip.show()
-        except:
-            pass
+        # Éteindre les LEDs en cas d'erreur
+        if 'pixels' in locals():
+            pixels.fill(OFF)
+            pixels.show()
 
 if __name__ == "__main__":
     main()
