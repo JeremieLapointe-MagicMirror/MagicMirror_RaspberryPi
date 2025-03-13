@@ -1,68 +1,71 @@
 #!/usr/bin/env python3
-
-# Pour installer les bibliothèques requises:
-# sudo pip3 install --break-system-packages adafruit-circuitpython-neopixel
-
-import board
-import neopixel
+from rpi_ws281x import PixelStrip, Color
 import time
 
-# Configuration
-pixel_pin = board.D18  # Pin GPIO 18
-num_pixels = 5        # Nombre de LEDs
-brightness = 0.2      # Luminosité (0.0 à 1.0)
+# Configuration des LEDs
+LED_COUNT = 5        # Nombre de LEDs
+LED_PIN = 18         # GPIO pin
+LED_FREQ_HZ = 800000 # Fréquence 
+LED_DMA = 10         # Canal DMA
+LED_BRIGHTNESS = 50  # Luminosité (0-255)
+LED_INVERT = False   # Signal inversé
+LED_CHANNEL = 0      # Canal PWM 
 
-# Initialisation de la bande LED
-pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=brightness, auto_write=False
-)
+# Initialisation
+strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
+strip.begin()
 
 # Couleurs
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-WHITE = (255, 255, 255)
-OFF = (0, 0, 0)
+RED = Color(255, 0, 0)
+GREEN = Color(0, 255, 0)
+BLUE = Color(0, 0, 255)
+WHITE = Color(255, 255, 255)
+OFF = Color(0, 0, 0)
 
+def allumer_toutes(couleur):
+    """Allume toutes les LEDs avec la couleur spécifiée"""
+    for i in range(strip.numPixels()):
+        strip.setPixelColor(i, couleur)
+    strip.show()
+    
 def test_couleurs():
-    """Test des différentes couleurs"""
+    """Teste différentes couleurs"""
     print("Rouge")
-    pixels.fill(RED)
-    pixels.show()
+    allumer_toutes(RED)
     time.sleep(1)
     
     print("Vert")
-    pixels.fill(GREEN)
-    pixels.show()
+    allumer_toutes(GREEN)
     time.sleep(1)
     
     print("Bleu")
-    pixels.fill(BLUE)
-    pixels.show()
+    allumer_toutes(BLUE)
     time.sleep(1)
     
     print("Blanc")
-    pixels.fill(WHITE)
-    pixels.show()
+    allumer_toutes(WHITE)
     time.sleep(1)
     
     print("Éteint")
-    pixels.fill(OFF)
-    pixels.show()
+    allumer_toutes(OFF)
     time.sleep(1)
 
 def test_individuel():
-    """Test de chaque LED individuellement"""
+    """Allume chaque LED une par une"""
     print("Test individuel des LEDs")
-    for i in range(num_pixels):
-        pixels.fill(OFF)  # Éteindre toutes les LEDs
-        pixels[i] = RED   # Allumer une seule LED
-        pixels.show()
+    for i in range(strip.numPixels()):
+        # Éteindre toutes les LEDs
+        allumer_toutes(OFF)
+        
+        # Allumer une seule LED
+        strip.setPixelColor(i, RED)
+        strip.show()
         print(f"LED {i}")
         time.sleep(0.5)
 
+# Programme principal
 try:
-    print("Programme de test LED avec neopixel")
+    print("Programme de test LED WS2812B")
     print("Appuyez sur Ctrl+C pour quitter")
     
     while True:
@@ -71,5 +74,4 @@ try:
         
 except KeyboardInterrupt:
     print("\nProgramme arrêté")
-    pixels.fill(OFF)  # Éteindre les LEDs en quittant
-    pixels.show()
+    allumer_toutes(OFF)  # Éteindre les LEDs en quittant
