@@ -1,37 +1,42 @@
 #!/usr/bin/env python3
 import time
-import board
-import neopixel
+from rpi_ws281x import PixelStrip, Color
 
-# Configuration pour la bande LED
-PIXEL_PIN = board.D18    # GPIO 18 (PIN physique 12)
-NUM_PIXELS = 5           # Nombre de LEDs sur la bande
-BRIGHTNESS = 0.3         # Luminosité initiale (0.0 à 1.0)
-ORDER = neopixel.GRB     # L'ordre des couleurs (GRB est courant pour de nombreuses LED NeoPixel)
+# Configuration de la bande LED
+LED_COUNT = 5          # Nombre de LEDs
+LED_PIN = 18           # GPIO pin (18 utilise PWM matériel)
+LED_FREQ_HZ = 800000   # Fréquence du signal (800 kHz)
+LED_DMA = 10           # Canal DMA
+LED_BRIGHTNESS = 100   # Luminosité (0-255)
+LED_INVERT = False     # Inverser le signal
+LED_CHANNEL = 0        # 0 pour les GPIO 10, 12, 18, 21
+LED_STRIP_TYPE = 0     # Type de LED: WS2812 = 1 (RGB), WS2811 = 0 (GRB)
 
-# Initialisation des LEDs
-pixels = neopixel.NeoPixel(
-    PIXEL_PIN, 
-    NUM_PIXELS, 
-    brightness=BRIGHTNESS, 
-    auto_write=False,    # Nécessite pixels.show() pour afficher les changements
-    pixel_order=ORDER
-)
+# Initialisation de la bande LED
+strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL, LED_STRIP_TYPE)
+strip.begin()
+
+# Fonction pour créer des couleurs
+def color(red, green, blue):
+    """Convertit les valeurs RGB en une valeur de couleur unique"""
+    # L'ordre dépend du type de LED, ajustez si nécessaire
+    return Color(red, green, blue)
 
 # Couleurs prédéfinies
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-PURPLE = (255, 0, 255)
-CYAN = (0, 255, 255)
-WHITE = (255, 255, 255)
-OFF = (0, 0, 0)
+RED = color(255, 0, 0)
+GREEN = color(0, 255, 0)
+BLUE = color(0, 0, 255)
+YELLOW = color(255, 255, 0)
+PURPLE = color(255, 0, 255)
+CYAN = color(0, 255, 255)
+WHITE = color(255, 255, 255)
+OFF = color(0, 0, 0)
 
 def clear():
     """Éteint toutes les LEDs"""
-    pixels.fill(OFF)
-    pixels.show()
+    for i in range(strip.numPixels()):
+        strip.setPixelColor(i, OFF)
+    strip.show()
 
 def test_colors():
     """Test simple de toutes les couleurs prédéfinies"""
@@ -39,8 +44,9 @@ def test_colors():
     
     print("Test des couleurs de base...")
     for color in colors:
-        pixels.fill(color)
-        pixels.show()
+        for i in range(strip.numPixels()):
+            strip.setPixelColor(i, color)
+        strip.show()
         time.sleep(1)
     
     clear()
@@ -50,11 +56,11 @@ def test_individual_leds():
     """Teste chaque LED individuellement"""
     print("Test de chaque LED individuellement...")
     
-    for i in range(NUM_PIXELS):
+    for i in range(strip.numPixels()):
         clear()
         print(f"Allumage de la LED {i+1}")
-        pixels[i] = WHITE
-        pixels.show()
+        strip.setPixelColor(i, WHITE)
+        strip.show()
         time.sleep(1)
     
     clear()
@@ -64,11 +70,11 @@ def test_chase():
     """Effet de poursuite simple"""
     print("Test d'animation (chase)...")
     
-    for color in [RED, BLUE, GREEN]:
-        for i in range(NUM_PIXELS * 3):  # Faire plusieurs tours
+    for test_color in [RED, BLUE, GREEN]:
+        for i in range(strip.numPixels() * 3):  # Faire plusieurs tours
             clear()
-            pixels[i % NUM_PIXELS] = color
-            pixels.show()
+            strip.setPixelColor(i % strip.numPixels(), test_color)
+            strip.show()
             time.sleep(0.1)
     
     clear()
@@ -78,16 +84,44 @@ def test_brightness():
     """Teste différents niveaux de luminosité"""
     print("Test de luminosité...")
     
-    pixels.fill(WHITE)
+    for i in range(strip.numPixels()):
+        strip.setPixelColor(i, WHITE)
     
-    for brightness in [0.1, 0.3, 0.5, 0.8, 1.0]:
-        print(f"Luminosité: {brightness}")
-        pixels.brightness = brightness
-        pixels.show()
+    for brightness in [25, 75, 125, 175, 255]:
+        print(f"Luminosité: {brightness}/255")
+        strip.setBrightness(brightness)
+        strip.show()
         time.sleep(1)
     
+    # Remettre à la luminosité par défaut
+    strip.setBrightness(LED_BRIGHTNESS)
     clear()
     print("Test de luminosité terminé")
+
+def rainbow_cycle(wait_ms=20, iterations=1):
+    """Affiche un cycle arc-en-ciel sur toutes les LEDs"""
+    print("Test arc-en-ciel...")
+    
+    for j in range(256 * iterations):
+        for i in range(strip.numPixels()):
+            # Calculer la couleur pour chaque pixel
+            wheel_pos = (i * 256 // strip.numPixels() + j) & 255
+            
+            # Fonction pour obtenir la couleur arc-en-ciel
+            if wheel_pos < 85:
+                strip.setPixelColor(i, Color(wheel_pos * 3, 255 - wheel_pos * 3, 0))
+            elif wheel_pos < 170:
+                wheel_pos -= 85
+                strip.setPixelColor(i, Color(255 - wheel_pos * 3, 0, wheel_pos * 3))
+            else:
+                wheel_pos -= 170
+                strip.setPixelColor(i, Color(0, wheel_pos * 3, 255 - wheel_pos * 3))
+        
+        strip.show()
+        time.sleep(wait_ms / 1000.0)
+    
+    clear()
+    print("Test arc-en-ciel terminé")
 
 def main_menu():
     """Menu principal pour sélectionner les tests"""
@@ -97,11 +131,12 @@ def main_menu():
         print("2. Test de chaque LED individuelle")
         print("3. Test d'animation (chase)")
         print("4. Test de luminosité")
-        print("5. Allumer en blanc")
-        print("6. Éteindre toutes les LEDs")
+        print("5. Test arc-en-ciel")
+        print("6. Allumer en blanc")
+        print("7. Éteindre toutes les LEDs")
         print("0. Quitter")
         
-        choice = input("Choisissez une option (0-6): ")
+        choice = input("Choisissez une option (0-7): ")
         
         if choice == '1':
             test_colors()
@@ -112,10 +147,13 @@ def main_menu():
         elif choice == '4':
             test_brightness()
         elif choice == '5':
-            pixels.fill(WHITE)
-            pixels.show()
-            print("LEDs allumées en blanc")
+            rainbow_cycle()
         elif choice == '6':
+            for i in range(strip.numPixels()):
+                strip.setPixelColor(i, WHITE)
+            strip.show()
+            print("LEDs allumées en blanc")
+        elif choice == '7':
             clear()
             print("LEDs éteintes")
         elif choice == '0':
@@ -131,9 +169,9 @@ if __name__ == "__main__":
         clear()  # S'assurer que toutes les LEDs sont éteintes au démarrage
         
         # Animation de démarrage simple
-        for i in range(NUM_PIXELS):
-            pixels[i] = BLUE
-            pixels.show()
+        for i in range(strip.numPixels()):
+            strip.setPixelColor(i, BLUE)
+            strip.show()
             time.sleep(0.1)
         time.sleep(0.5)
         clear()
