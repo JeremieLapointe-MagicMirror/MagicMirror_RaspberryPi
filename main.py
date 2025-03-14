@@ -21,7 +21,7 @@ MQTT_BROKER = "mirrormqtt.jeremielapointe.ca"
 MQTT_PORT = 1883
 MQTT_USER = "MirrorMQTT"
 MQTT_PASSWORD = "Patate123"
-MQTT_STATUS_TOPIC = "led/statusaa"
+MQTT_STATUS_TOPIC = "led/status"
 MQTT_COMMAND_TOPIC = "led/command"
 
 # Définition des couleurs
