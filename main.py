@@ -8,7 +8,7 @@ import json
 # Configuration pour l'anneau NeoPixel
 pixel_pin = board.D18  # GPIO 18
 num_pixels = 35        # Nombre de LEDs sur l'anneau
-brightness = 0.3       # Luminosité (0.0 à 1.0)
+brightness = 0.1       # Luminosité (0.0 à 1.0)
 ORDER = neopixel.GRB   # L'ordre des couleurs peut être GRB ou RGB
 
 # Initialisation de l'anneau LED
