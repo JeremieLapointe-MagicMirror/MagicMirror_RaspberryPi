@@ -5,26 +5,28 @@ from datetime import datetime
 
 # Configuration
 PIN_PIR = 4
-DELAI_INIT = 3  # Secondes d'initialisation
+DELAI_REFRESH = 0.5  # Temps entre chaque rafraîchissement en secondes
 
 # Initialisation du capteur
 pir = MotionSensor(PIN_PIR)
 
 print("Initialisation du capteur PIR...")
-time.sleep(DELAI_INIT)
+time.sleep(2)
 print("Capteur prêt! En attente de mouvement...")
 
 try:
     while True:
         # Attendre qu'un mouvement soit détecté
         pir.wait_for_motion()
-        horodatage = datetime.now().strftime("%H:%M:%S")
-        print(f"[{horodatage}] Mouvement détecté!")
+        print("Mouvement détecté!")
         
-        # Attendre la fin du mouvement
-        pir.wait_for_no_motion()
-        horodatage = datetime.now().strftime("%H:%M:%S")
-        print(f"[{horodatage}] Mouvement terminé")
+        # Tant qu'il y a du mouvement, continuer à afficher le message
+        while pir.motion_detected:
+            horodatage = datetime.now().strftime("%H:%M:%S")
+            print(f"[{horodatage}] Mouvement en cours...")
+            time.sleep(DELAI_REFRESH)
+        
+        print("Plus de mouvement détecté.")
         print("En attente de nouveau mouvement...")
 
 except KeyboardInterrupt:
