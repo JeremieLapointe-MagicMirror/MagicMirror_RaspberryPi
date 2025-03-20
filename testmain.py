@@ -1,40 +1,28 @@
 #!/usr/bin/env python3
-from gpiozero import MotionSensor
+import RPi.GPIO as GPIO
 import time
-import sys
 
 # Configuration
 PIN_PIR = 4
-TEMPS_STABILISATION = 60  # secondes
+DETECTION_ACTIVE = 0  # Signal BAS (0) pour détecter le mouvement
 
-# Initialisation avec paramètres de sensibilité ajustés
-# Diminuer threshold rend le capteur moins sensible
-# Augmenter queue_len exige plus de détections consécutives
-pir = MotionSensor(PIN_PIR, threshold=0.7, queue_len=5)
+# Configuration GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_PIR, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Activation pull-up
 
-# Période de stabilisation
-print(f"Initialisation du capteur PIR, veuillez patienter {TEMPS_STABILISATION} secondes...")
-for i in range(TEMPS_STABILISATION, 0, -1):
-    sys.stdout.write(f"\rStabilisation: {i} secondes restantes...")
-    sys.stdout.flush()
-    time.sleep(1)
-print("\nCapteur PIR prêt!")
+print("Test de détection PIR - Appuyez sur Ctrl+C pour quitter")
+print("Initialisation...")
+time.sleep(2)  # Court délai d'initialisation
 
-# Boucle principale
 try:
     while True:
-        print("Recherche de présence humaine...")
+        if GPIO.input(PIN_PIR) == DETECTION_ACTIVE:
+            print("Présence humaine détectée!")
+        else:
+            print("Pas de présence détectée")
         
-        # Attendre un mouvement
-        pir.wait_for_motion()
-        print("Présence humaine détectée!")
-        
-        # Attendre la fin du mouvement
-        pir.wait_for_no_motion()
-        print("Plus de présence humaine détectée")
-        
-        # Petit délai pour éviter les rebonds
-        time.sleep(2)
+        time.sleep(1)
         
 except KeyboardInterrupt:
     print("\nProgramme arrêté par l'utilisateur")
+    GPIO.cleanup()
