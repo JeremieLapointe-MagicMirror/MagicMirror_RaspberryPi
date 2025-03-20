@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-from gpiozero import MotionSensor
+import RPi.GPIO as GPIO
+import time
 
-# Utilisation du GPIO 17 au lieu du GPIO 4
-pir = MotionSensor(17)
+# Choisir un GPIO différent
+PIN_PIR = 27  # Essayez un autre GPIO (27 = pin physique 13)
 
-print("Test de capteur PIR avec gpiozero")
-print("Initialisation du capteur...")
-print("Capteur prêt!")
+# Configuration GPIO en mode brut
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_PIR, GPIO.IN)
 
-while True:
-    print("Recherche de présence humaine...")
-    pir.wait_for_motion()
-    
-    print("Présence humaine détectée!")
-    pir.wait_for_no_motion()
-    
-    print("Plus de présence humaine détectée")
+print(f"Test PIR basique sur GPIO {PIN_PIR}")
+print("Appuyez sur Ctrl+C pour quitter")
+
+try:
+    while True:
+        # Lire directement l'état du GPIO
+        etat = GPIO.input(PIN_PIR)
+        print(f"État: {etat}")
+        time.sleep(1)
+        
+except KeyboardInterrupt:
+    GPIO.cleanup()
+    print("\nTest terminé")
