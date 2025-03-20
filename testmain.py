@@ -1,24 +1,31 @@
 #!/usr/bin/env python3
-import RPi.GPIO as GPIO
+from gpiozero import MotionSensor
 import time
+from datetime import datetime
 
-# Choisir un GPIO différent
-PIN_PIR = 27  # Essayez un autre GPIO (27 = pin physique 13)
+# Configuration
+PIN_PIR = 4
+DELAI_INIT = 3  # Secondes d'initialisation
 
-# Configuration GPIO en mode brut
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(PIN_PIR, GPIO.IN)
+# Initialisation du capteur
+pir = MotionSensor(PIN_PIR)
 
-print(f"Test PIR basique sur GPIO {PIN_PIR}")
-print("Appuyez sur Ctrl+C pour quitter")
+print("Initialisation du capteur PIR...")
+time.sleep(DELAI_INIT)
+print("Capteur prêt! En attente de mouvement...")
 
 try:
     while True:
-        # Lire directement l'état du GPIO
-        etat = GPIO.input(PIN_PIR)
-        print(f"État: {etat}")
-        time.sleep(1)
+        # Attendre qu'un mouvement soit détecté
+        pir.wait_for_motion()
+        horodatage = datetime.now().strftime("%H:%M:%S")
+        print(f"[{horodatage}] Mouvement détecté!")
         
+        # Attendre la fin du mouvement
+        pir.wait_for_no_motion()
+        horodatage = datetime.now().strftime("%H:%M:%S")
+        print(f"[{horodatage}] Mouvement terminé")
+        print("En attente de nouveau mouvement...")
+
 except KeyboardInterrupt:
-    GPIO.cleanup()
-    print("\nTest terminé")
+    print("\nProgramme arrêté par l'utilisateur")
