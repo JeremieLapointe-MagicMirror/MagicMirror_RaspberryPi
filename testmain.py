@@ -4,8 +4,8 @@ import time
 import sys
 
 # Configuration
-PIN_PIR = 13
-TEMPS_STABILISATION = 15 # secondes
+PIN_PIR = 7
+TEMPS_STABILISATION = 60  # secondes
 
 # Initialisation avec paramètres de sensibilité ajustés
 # Diminuer threshold rend le capteur moins sensible
