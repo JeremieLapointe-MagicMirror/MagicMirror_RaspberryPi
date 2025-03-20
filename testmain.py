@@ -1,39 +1,42 @@
 #!/usr/bin/env python3
-from gpiozero import MotionSensor
+import RPi.GPIO as GPIO
 import time
-import sys
+from datetime import datetime
 
 # Configuration
 PIN_PIR = 4
-TEMPS_STABILISATION = 10  # réduit pour faciliter les tests
 
-# Initialisation avec logique inversée
-# when_activated et when_deactivated sont inversés ici
-pir = MotionSensor(PIN_PIR, threshold=0.5, queue_len=1, pull_up=True, active_state=False)
+# Configuration du GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_PIR, GPIO.IN)
 
-# Période de stabilisation
-print(f"Initialisation du capteur PIR, veuillez patienter {TEMPS_STABILISATION} secondes...")
-for i in range(TEMPS_STABILISATION, 0, -1):
-    sys.stdout.write(f"\rStabilisation: {i} secondes restantes...")
-    sys.stdout.flush()
-    time.sleep(1)
-print("\nCapteur PIR prêt!")
+print("Test de diagnostic PIR - Appuyez sur Ctrl+C pour quitter")
+print("État initial du capteur...")
 
-# Boucle principale
+# Déterminer automatiquement l'état actif/inactif
+time.sleep(3)  # Attendre un moment pour une lecture stable
+etat_initial = GPIO.input(PIN_PIR)
+print(f"État initial détecté : {'HAUT (1)' if etat_initial else 'BAS (0)'}")
+
+# Détermine quelle valeur représente une détection
+print("Pour déterminer quel état représente une détection:")
+print("1. Assurez-vous qu'il n'y a PAS de mouvement devant le capteur")
+print("2. Puis, après quelques secondes, bougez devant le capteur")
+print("3. Observez les changements d'état")
+
 try:
+    dernier_etat = None
     while True:
-        print("Recherche de présence humaine...")
+        etat_actuel = GPIO.input(PIN_PIR)
         
-        # Attendre un mouvement (avec logique inversée)
-        pir.wait_for_motion()
-        print("Présence humaine détectée!")
+        # N'afficher que lorsque l'état change
+        if etat_actuel != dernier_etat:
+            horodatage = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            print(f"[{horodatage}] État du capteur : {'HAUT (1)' if etat_actuel else 'BAS (0)'}")
+            dernier_etat = etat_actuel
         
-        # Attendre la fin du mouvement (avec logique inversée)
-        pir.wait_for_no_motion()
-        print("Plus de présence humaine détectée")
-        
-        # Petit délai
-        time.sleep(1)
+        time.sleep(0.1)  # Vérification rapide sans surcharger le CPU
         
 except KeyboardInterrupt:
-    print("\nProgramme arrêté par l'utilisateur")
+    print("\nTest terminé")
+    GPIO.cleanup()
