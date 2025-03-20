@@ -4,7 +4,7 @@ import time
 import sys
 
 # Configuration
-PIN_PIR = 4
+PIN_PIR = 13
 TEMPS_STABILISATION = 15 # secondes
 
 # Initialisation avec paramètres de sensibilité ajustés
