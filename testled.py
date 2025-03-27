@@ -4,7 +4,7 @@ import time
 
 # Configuration des LEDs NeoPixel
 # GPIO 15 correspond à board.D15 dans CircuitPython
-pixel_pin = board.D15
+pixel_pin = board.D18
 num_pixels = 5
 ORDER = neopixel.GRB  # L'ordre des couleurs peut être différent selon votre modèle de LED
 
