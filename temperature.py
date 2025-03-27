@@ -1,16 +1,8 @@
 import time
-import paho.mqtt.client as mqtt
-import json
 from datetime import datetime
 
-# Configuration MQTT
-MQTT_BROKER = "broker.hivemq.com"  # Remplacez par l'adresse de votre broker
-MQTT_PORT = 1883
-MQTT_TOPIC = "raspberry/temperature"  # Sujet où publier les données
-MQTT_CLIENT_ID = "raspberry_pi_temp_monitor"
-
-# Fonction pour obtenir la température du CPU
 def get_cpu_temperature():
+    """Récupère la température CPU du Raspberry Pi en degrés Celsius"""
     try:
         # Ouvrir le fichier contenant la température
         with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
@@ -20,49 +12,29 @@ def get_cpu_temperature():
         print(f"Erreur lors de la lecture de la température: {e}")
         return None
 
-# Callback lors de la connexion au broker
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("Connecté au broker MQTT")
-    else:
-        print(f"Échec de la connexion avec le code: {rc}")
-
-# Créer un client MQTT
-client = mqtt.Client(client_id=MQTT_CLIENT_ID)
-client.on_connect = on_connect
-
-# Connexion au broker
-try:
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_start()
-    
-    # Boucle principale
-    while True:
-        # Obtenir la température
-        temperature = get_cpu_temperature()
+def main():
+    try:
+        print("Surveillance de la température du Raspberry Pi")
+        print("Appuyez sur Ctrl+C pour arrêter le programme")
+        print("-" * 50)
         
-        if temperature is not None:
-            # Créer un message avec la température et l'horodatage
-            message = {
-                "temperature": temperature,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "device": "raspberry_pi_4"
-            }
+        # Boucle principale
+        while True:
+            # Obtenir la température
+            temperature = get_cpu_temperature()
             
-            # Convertir en JSON et publier
-            payload = json.dumps(message)
-            client.publish(MQTT_TOPIC, payload)
+            if temperature is not None:
+                # Afficher la température avec l'horodatage
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"[{timestamp}] Température CPU: {temperature:.2f}°C")
             
-            print(f"Température publiée: {temperature}°C")
-        
-        # Attendre avant la prochaine mesure
-        time.sleep(60)  # Publier toutes les minutes
+            # Attendre avant la prochaine mesure
+            time.sleep(5)  # Vérifier toutes les 5 secondes
+            
+    except KeyboardInterrupt:
+        print("\nProgramme arrêté par l'utilisateur")
+    except Exception as e:
+        print(f"Erreur: {e}")
 
-except KeyboardInterrupt:
-    print("Programme arrêté par l'utilisateur")
-    client.loop_stop()
-    client.disconnect()
-except Exception as e:
-    print(f"Erreur: {e}")
-    client.loop_stop()
-    client.disconnect()
+if __name__ == "__main__":
+    main()
