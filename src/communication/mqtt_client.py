@@ -1,11 +1,30 @@
 import json
 import paho.mqtt.client as mqtt
+import ssl
 from datetime import datetime
 
 class MQTTClient:
     def __init__(self, broker, port, username, password, client_id="raspberry_pi_monitor"):
+        # Supprimer le préfixe "mqtts://" s'il est présent
+        if broker.startswith("mqtts://"):
+            broker = broker[8:]
+            
         self.client = mqtt.Client(client_id=client_id)
         self.client.username_pw_set(username, password)
+        
+        # Configuration TLS pour MQTTS
+        self.client.tls_set(
+            ca_certs=None,  # Chemin vers le certificat CA si nécessaire
+            certfile=None,  # Chemin vers le certificat client si nécessaire
+            keyfile=None,   # Chemin vers la clé privée si nécessaire
+            cert_reqs=ssl.CERT_REQUIRED,
+            tls_version=ssl.PROTOCOL_TLS,
+            ciphers=None
+        )
+        
+        # Ignore la vérification du nom d'hôte - à modifier si vous avez un certificat valide
+        self.client.tls_insecure_set(True)
+        
         self.broker = broker
         self.port = port
         self.connected = False
@@ -42,7 +61,7 @@ class MQTTClient:
     def connect(self):
         """Se connecte au broker MQTT"""
         try:
-            print(f"Connexion au broker {self.broker}...")
+            print(f"Connexion au broker MQTTS {self.broker}...")
             self.client.connect(self.broker, self.port, 60)
             self.client.loop_start()
             return True
