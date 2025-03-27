@@ -12,6 +12,14 @@ def get_cpu_temperature():
         print(f"Erreur lors de la lecture de la température: {e}")
         return None
 
+def format_temperature_message(temperature):
+    """Crée un message formaté avec la température"""
+    return {
+        "temperature": round(temperature, 2),
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "device": "raspberry_pi_4"
+    }
+
 def main():
     try:
         print("Surveillance de la température du Raspberry Pi")
