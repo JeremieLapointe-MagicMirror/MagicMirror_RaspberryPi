@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
 import time
 import json
 from datetime import datetime
 import signal
 import sys
-
-# Import des modules du projet
 from src.config import MQTT_CONFIG, SENSOR_CONFIG
 from src.sensors.temperature import get_cpu_temperature, format_temperature_message
 from src.communication.mqtt_client import MQTTClient
