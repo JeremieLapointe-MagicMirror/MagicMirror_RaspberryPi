@@ -12,7 +12,7 @@ def touch_det(pin):
 try:
     while True:
         if touch_det(touch_pin): print ('['+time.ctime()+'] - '+'Touch Detected')
-        time.sleep(0,2)
+        time.sleep(0.2)
 except KeyboardInterrupt:
   print('interrupted!')
   GPIO.cleanup()
