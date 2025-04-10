@@ -1,38 +1,29 @@
 import time
 import RPi.GPIO as GPIO
-import sys
 
-# Configuration
+# Configuration de base
 touch_pin = 17
-
-# Réinitialiser proprement le GPIO avant de commencer
-GPIO.cleanup()
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(touch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# Variables pour le "software debouncing"
-last_touch_time = 0
-touch_cooldown = 0.5  # 500ms entre détections
+GPIO.setup(touch_pin, GPIO.IN)
 
 try:
-    print("Programme démarré avec debouncing logiciel. Appuyez sur Ctrl+C pour quitter.")
+    print("Programme démarré. Touchez le capteur TTP223...")
+    
+    # État initial
+    last_state = GPIO.input(touch_pin)
+    print(f"État initial: {'HIGH' if last_state else 'LOW'}")
     
     while True:
-        # Lecture de l'état actuel
         current_state = GPIO.input(touch_pin)
-        current_time = time.time()
         
-        # Détection d'une pression (LOW avec PUD_UP)
-        if current_state == 0 and (current_time - last_touch_time) > touch_cooldown:
-            print(f"[{time.ctime()}] Capteur touché")
-            last_touch_time = current_time
+        # Afficher uniquement lors d'un changement d'état
+        if current_state != last_state:
+            print(f"[{time.ctime()}] État: {'HIGH' if current_state else 'LOW'}")
+            last_state = current_state
             
-        time.sleep(0.05)  # Courte pause
+        time.sleep(0.05)
         
 except KeyboardInterrupt:
     print("Programme interrompu!")
-except Exception as e:
-    print(f"Erreur: {e}")
 finally:
     GPIO.cleanup()
-    sys.exit(0)
