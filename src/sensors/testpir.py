@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 # Configuration
-PIN_PIR = 4
+PIN_PIR = 22
 DELAI_VERIFICATION = 0.2  # Temps entre chaque vérification
 DELAI_DETECTION = 3  # Temps en secondes pour considérer qu'il n'y a plus de mouvement
 
