@@ -14,7 +14,7 @@ MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtts://mirrormqtt.jeremielapointe.ca")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 8883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "MirrorMQTT")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "Patate123")
-MQTT_TOPIC = os.getenv("MQTT_TOPIC_TEMPERATURE", "mm/temperature")
+MQTT_TOPIC = os.getenv("MQTT_TOPIC_TEMPERATURE", "serial/temperature")
 
 # Supprimer le préfixe "mqtts://" s'il existe
 if MQTT_BROKER.startswith("mqtts://"):
