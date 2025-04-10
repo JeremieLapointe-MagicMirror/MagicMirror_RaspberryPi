@@ -3,16 +3,16 @@ import RPi.GPIO as GPIO
 
 touch_pin = 17
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(touch_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(touch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def touch_det(pin):
-    return GPIO.input(pin)
+    return not GPIO.input(pin)
 
 try:
     while True:
-        state = touch_det(touch_pin)
-        print(f'[{time.ctime()}] - État du bouton: {state}')
+        if touch_det(touch_pin): 
+            print ('['+time.ctime()+'] - '+'Touch Detected')
         time.sleep(0.2)
 except KeyboardInterrupt:
-    print('interrupted!')
-    GPIO.cleanup()
+  print('interrupted!')
+  GPIO.cleanup()
