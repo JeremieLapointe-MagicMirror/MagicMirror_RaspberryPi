@@ -10,7 +10,8 @@ MQTT_CONFIG = {
     'port': int(os.getenv('MQTT_PORT', 1883)),
     'username': os.getenv('MQTT_USERNAME'),
     'password': os.getenv('MQTT_PASSWORD'),
-    'topic_temperature': os.getenv('MQTT_TOPIC_TEMPERATURE', 'mm/temperature'),
+    'topic_temperature': os.getenv('MQTT_TOPIC_TEMPERATURE', 'serial/temperature'),
+    'topic_pir_state': os.getenv('MQTT_TOPIC_PIR_STATE', 'serial/etatpir'),
     'topic_led_command': os.getenv('MQTT_TOPIC_LED_COMMAND', 'led/command'),
     'topic_led_status': os.getenv('MQTT_TOPIC_LED_STATUS', 'led/status'),
 }
@@ -18,7 +19,7 @@ MQTT_CONFIG = {
 # Configuration des capteurs
 SENSOR_CONFIG = {
     'temperature_check_interval': 30,  # secondes
-    'motion_pin': 4,
+    'motion_pin': 23,  # GPIO pin pour le capteur PIR
     'touch_pin': 17,
 }
 
