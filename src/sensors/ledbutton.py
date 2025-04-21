@@ -1,92 +1,34 @@
 #!/usr/bin/env python3
-# Code pour contrôler des LEDs NeoPixel avec un bouton tactile TTP223 simplifié
-# Ce code implémente la bascule en logiciel puisque la broche TOG n'est pas accessible
-
-import time
-import board
-import neopixel
+# Code de test pour le capteur TTP223
 import RPi.GPIO as GPIO
+import time
 
-# Configuration des broches
-BUTTON_PIN = 17  # Broche GPIO pour le bouton TTP223 (à ajuster selon votre câblage)
-PIXEL_PIN = board.D18  # Broche de données pour les NeoPixels
-NUM_PIXELS = 5  # Limité à 5 LEDs pour la phase initiale
+# Configuration de la broche
+BUTTON_PIN = 17  # Ajustez selon votre branchement
 
-# Configuration des LED NeoPixel
-pixels = neopixel.NeoPixel(
-    PIXEL_PIN, 
-    NUM_PIXELS, 
-    brightness=0.5,
-    auto_write=True,
-    pixel_order=neopixel.GRB
-)
-
-# Couleur par défaut (blanc)
-DEFAULT_COLOR = (255, 255, 255)
-
-# Configuration du GPIO pour le bouton
+# Configuration du GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON_PIN, GPIO.IN)
 
-# Variables d'état
-led_state = False  # État initial: éteint
-last_button_state = GPIO.input(BUTTON_PIN)
-last_time_pressed = 0
-DEBOUNCE_TIME = 0.5  # Temps de rebond augmenté
-
-def turn_on_leds():
-    """Allume toutes les LEDs avec la couleur par défaut."""
-    for i in range(NUM_PIXELS):
-        pixels[i] = DEFAULT_COLOR
-    pixels.show()
-    
-def turn_off_leds():
-    """Éteint toutes les LEDs."""
-    pixels.fill((0, 0, 0))
-    pixels.show()
-
 try:
-    print("Programme démarré. Appuyez sur le bouton TTP223 pour allumer/éteindre les LEDs.")
-    print("Appuyez sur Ctrl+C pour quitter.")
+    print("Test du capteur TTP223. Appuyez sur Ctrl+C pour quitter.")
+    print("Touchez le capteur et observez les changements d'état.")
     
-    # État initial des LEDs (éteintes)
-    turn_off_leds()
+    last_state = GPIO.input(BUTTON_PIN)
+    print(f"État initial du capteur: {'Touché' if last_state else 'Non touché'}")
     
     while True:
-        # Lecture de l'état actuel du bouton
-        current_button_state = GPIO.input(BUTTON_PIN)
+        # Lecture de l'état actuel
+        current_state = GPIO.input(BUTTON_PIN)
         
-        # Détection du front montant (0 -> 1) avec anti-rebond
-        current_time = time.time()
-        if (current_button_state != last_button_state and 
-            current_button_state == GPIO.HIGH and 
-            current_time - last_time_pressed > DEBOUNCE_TIME):
-            
-            # Inverser l'état des LEDs
-            led_state = not led_state
-            
-            if led_state:
-                print("LEDs allumées")
-                turn_on_leds()
-            else:
-                print("LEDs éteintes")
-                turn_off_leds()
-            
-            last_time_pressed = current_time
-            
-        # Enregistrer l'état du bouton pour la prochaine itération
-        last_button_state = current_button_state
+        # Affichage de l'état seulement s'il a changé
+        if current_state != last_state:
+            print(f"État du capteur: {'Touché' if current_state else 'Non touché'}")
+            last_state = current_state
         
-        # Court délai pour économiser le CPU
+        # Court délai
         time.sleep(0.1)
         
 except KeyboardInterrupt:
-    # Éteindre les LEDs avant de quitter
-    turn_off_leds()
     GPIO.cleanup()
-    print("\nProgramme arrêté proprement.")
-except Exception as e:
-    # En cas d'erreur, éteindre les LEDs et nettoyer le GPIO
-    turn_off_leds()
-    GPIO.cleanup()
-    print(f"Une erreur s'est produite: {e}")
+    print("\nTest terminé.")
