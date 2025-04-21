@@ -32,7 +32,8 @@ GPIO.setup(BUTTON_PIN, GPIO.IN)
 led_state = False  # État initial: éteint
 last_button_state = GPIO.input(BUTTON_PIN)
 last_time_pressed = 0
-DEBOUNCE_TIME = 0.2  # Temps de rebond en secondes
+DEBOUNCE_TIME = 0.3  # Temps de rebond augmenté
+stable_count = 0     # Compteur pour s'assurer de la stabilité du signal
 
 def turn_on_leds():
     """Allume toutes les LEDs avec la couleur par défaut."""
@@ -53,9 +54,16 @@ try:
         # Lecture de l'état actuel du bouton
         current_button_state = GPIO.input(BUTTON_PIN)
         
-        # Gestion de l'anti-rebond et détection de front montant (appui)
+        # Vérification de la stabilité du signal
+        if current_button_state == last_button_state:
+            stable_count += 1
+        else:
+            stable_count = 0
+        
+        # Gestion de l'anti-rebond et détection avec une stabilité améliorée
         current_time = time.time()
-        if (current_button_state != last_button_state and 
+        if (stable_count >= 5 and  # Le signal doit être stable pendant au moins 5 cycles
+            current_button_state != last_button_state and 
             current_button_state == GPIO.HIGH and 
             current_time - last_time_pressed > DEBOUNCE_TIME):
             
@@ -70,12 +78,13 @@ try:
                 turn_off_leds()
             
             last_time_pressed = current_time
+            time.sleep(0.5)  # Attente supplémentaire après un changement d'état
             
         # Enregistrer l'état du bouton pour la prochaine itération
         last_button_state = current_button_state
         
         # Court délai pour économiser le CPU
-        time.sleep(0.01)
+        time.sleep(0.05)  # Délai légèrement plus long pour réduire la sensibilité
         
 except KeyboardInterrupt:
     # Éteindre les LEDs avant de quitter
