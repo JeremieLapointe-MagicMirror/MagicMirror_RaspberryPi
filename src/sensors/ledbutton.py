@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Code pour contrôler des LEDs NeoPixel avec un bouton tactile TTP223
-# Ce code utilise RPi.GPIO pour le bouton et rpi_ws281x pour les NeoPixels
+# Code pour contrôler des LEDs NeoPixel avec un bouton tactile TTP223 en mode toggle
+# Ce code est simplifié car le mode toggle est géré par le capteur lui-même
 
 import time
 import board
@@ -9,16 +9,16 @@ import RPi.GPIO as GPIO
 
 # Configuration des broches
 BUTTON_PIN = 17  # Broche GPIO pour le bouton TTP223 (à ajuster selon votre câblage)
-PIXEL_PIN = board.D18  # Broche de données pour les NeoPixels (D18 est GPIO 18)
-NUM_PIXELS = 5  # Limitation à 5 LEDs pour la phase initiale
+PIXEL_PIN = board.D18  # Broche de données pour les NeoPixels
+NUM_PIXELS = 5  # Limité à 5 LEDs pour la phase initiale
 
 # Configuration des LED NeoPixel
 pixels = neopixel.NeoPixel(
     PIXEL_PIN, 
     NUM_PIXELS, 
-    brightness=0.5,  # 50% de luminosité
+    brightness=0.5,
     auto_write=True,
-    pixel_order=neopixel.GRB  # La plupart des NeoPixels utilisent l'ordre GRB
+    pixel_order=neopixel.GRB
 )
 
 # Couleur par défaut (blanc)
@@ -27,13 +27,6 @@ DEFAULT_COLOR = (255, 255, 255)
 # Configuration du GPIO pour le bouton
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON_PIN, GPIO.IN)
-
-# Variables d'état
-led_state = False  # État initial: éteint
-last_button_state = GPIO.input(BUTTON_PIN)
-last_time_pressed = 0
-DEBOUNCE_TIME = 0.3  # Temps de rebond augmenté
-stable_count = 0     # Compteur pour s'assurer de la stabilité du signal
 
 def turn_on_leds():
     """Allume toutes les LEDs avec la couleur par défaut."""
@@ -48,43 +41,35 @@ def turn_off_leds():
 
 try:
     print("Programme démarré. Appuyez sur le bouton TTP223 pour allumer/éteindre les LEDs.")
+    print("Assurez-vous que votre TTP223 est configuré en mode toggle (broche TOG connectée à VDD).")
     print("Appuyez sur Ctrl+C pour quitter.")
+    
+    # État initial des LEDs (éteintes)
+    turn_off_leds()
+    
+    # En mode toggle, le capteur gère l'état lui-même
+    last_state = GPIO.input(BUTTON_PIN)
     
     while True:
         # Lecture de l'état actuel du bouton
-        current_button_state = GPIO.input(BUTTON_PIN)
+        current_state = GPIO.input(BUTTON_PIN)
         
-        # Vérification de la stabilité du signal
-        if current_button_state == last_button_state:
-            stable_count += 1
-        else:
-            stable_count = 0
-        
-        # Gestion de l'anti-rebond et détection avec une stabilité améliorée
-        current_time = time.time()
-        if (stable_count >= 5 and  # Le signal doit être stable pendant au moins 5 cycles
-            current_button_state != last_button_state and 
-            current_button_state == GPIO.HIGH and 
-            current_time - last_time_pressed > DEBOUNCE_TIME):
-            
-            # Inverser l'état des LEDs
-            led_state = not led_state
-            
-            if led_state:
+        # Si l'état a changé, mettre à jour les LEDs
+        if current_state != last_state:
+            if current_state == GPIO.HIGH:
                 print("LEDs allumées")
                 turn_on_leds()
             else:
                 print("LEDs éteintes")
                 turn_off_leds()
             
-            last_time_pressed = current_time
-            time.sleep(0.5)  # Attente supplémentaire après un changement d'état
+            # Petit délai pour éviter des changements multiples trop rapides
+            time.sleep(0.2)
             
-        # Enregistrer l'état du bouton pour la prochaine itération
-        last_button_state = current_button_state
+        last_state = current_state
         
         # Court délai pour économiser le CPU
-        time.sleep(0.05)  # Délai légèrement plus long pour réduire la sensibilité
+        time.sleep(0.05)
         
 except KeyboardInterrupt:
     # Éteindre les LEDs avant de quitter
