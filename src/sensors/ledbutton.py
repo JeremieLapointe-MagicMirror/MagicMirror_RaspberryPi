@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Code pour contrôler des LEDs NeoPixel avec un bouton tactile TTP223 en mode toggle
-# Ce code est simplifié car le mode toggle est géré par le capteur lui-même
+# Code pour contrôler des LEDs NeoPixel avec un bouton tactile TTP223 simplifié
+# Ce code implémente la bascule en logiciel puisque la broche TOG n'est pas accessible
 
 import time
 import board
@@ -28,6 +28,12 @@ DEFAULT_COLOR = (255, 255, 255)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON_PIN, GPIO.IN)
 
+# Variables d'état
+led_state = False  # État initial: éteint
+last_button_state = GPIO.input(BUTTON_PIN)
+last_time_pressed = 0
+DEBOUNCE_TIME = 0.5  # Temps de rebond augmenté
+
 def turn_on_leds():
     """Allume toutes les LEDs avec la couleur par défaut."""
     for i in range(NUM_PIXELS):
@@ -41,35 +47,38 @@ def turn_off_leds():
 
 try:
     print("Programme démarré. Appuyez sur le bouton TTP223 pour allumer/éteindre les LEDs.")
-    print("Assurez-vous que votre TTP223 est configuré en mode toggle (broche TOG connectée à VDD).")
     print("Appuyez sur Ctrl+C pour quitter.")
     
     # État initial des LEDs (éteintes)
     turn_off_leds()
     
-    # En mode toggle, le capteur gère l'état lui-même
-    last_state = GPIO.input(BUTTON_PIN)
-    
     while True:
         # Lecture de l'état actuel du bouton
-        current_state = GPIO.input(BUTTON_PIN)
+        current_button_state = GPIO.input(BUTTON_PIN)
         
-        # Si l'état a changé, mettre à jour les LEDs
-        if current_state != last_state:
-            if current_state == GPIO.HIGH:
+        # Détection du front montant (0 -> 1) avec anti-rebond
+        current_time = time.time()
+        if (current_button_state != last_button_state and 
+            current_button_state == GPIO.HIGH and 
+            current_time - last_time_pressed > DEBOUNCE_TIME):
+            
+            # Inverser l'état des LEDs
+            led_state = not led_state
+            
+            if led_state:
                 print("LEDs allumées")
                 turn_on_leds()
             else:
                 print("LEDs éteintes")
                 turn_off_leds()
             
-            # Petit délai pour éviter des changements multiples trop rapides
-            time.sleep(0.2)
+            last_time_pressed = current_time
             
-        last_state = current_state
+        # Enregistrer l'état du bouton pour la prochaine itération
+        last_button_state = current_button_state
         
         # Court délai pour économiser le CPU
-        time.sleep(0.05)
+        time.sleep(0.1)
         
 except KeyboardInterrupt:
     # Éteindre les LEDs avant de quitter
